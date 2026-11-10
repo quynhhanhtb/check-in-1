@@ -32,11 +32,36 @@
  td{padding:6px 12px 6px 4px;border-top:1px solid #eef1f4;font-weight:600;line-height:1.35;word-break:break-word}
  td.tr,.trd,.dau span.trd{color:#c62828;background:#fdecea;font-weight:800;letter-spacing:.5px}
  .chan{text-align:center;font-size:12px;color:#888;padding:4px 0 6px}
+ .che{display:flex;gap:6px;margin-bottom:8px}.che button{flex:1;font-size:15px;font-weight:700;padding:9px;border:1px solid #c9ced6;background:#fff;border-radius:8px;color:#0b4f8a}
+ .che button.on{background:#0b4f8a;color:#fff;border-color:#0b4f8a}
+ .tt{font-size:13px;font-weight:800;padding:2px 8px;border-radius:10px;white-space:nowrap}
+ .tt.ok{background:#e6f4ea;color:#1e7b34}.tt.chua{background:#fdecea;color:#c62828}.tt.cho{background:#eef1f4;color:#5d6b7c}
+ #nhap{display:none;margin:10px 14px;background:#fff;border-radius:12px;padding:12px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+ #nhap h3{margin:0 0 8px;font-size:16px;color:#0b4f8a}
+ #nhap label{display:block;font-size:13px;font-weight:700;color:#5d6b7c;margin:8px 0 3px}
+ #nhap input,#nhap textarea{width:100%;font-size:16px;padding:9px;border:1px solid #c9ced6;border-radius:8px;font-family:inherit}
+ #nhap textarea{min-height:60px}
+ .nut2{display:flex;gap:8px;margin-top:10px}.nut2 button{flex:1;font-size:16px;font-weight:800;padding:12px;border:0;border-radius:10px;background:#1e7b34;color:#fff}
+ .nut2 button.phu{background:#eef1f4;color:#1b1f24}
+ .viec{display:flex;gap:8px;align-items:flex-start;border-top:1px solid #eef1f4;padding:8px 0;font-size:15px}
+ .viec div{flex:1}.viec small{color:#5d6b7c}.viec button{font-size:13px;padding:6px 9px;border:1px solid #c9ced6;background:#fff;border-radius:8px}
 </style></head><body>
 <div class="dk">
- <h1>📄 Báo cáo ngày · <span id="tenNV">…</span></h1>
+ <h1><span id="tieuDe">📄 Báo cáo ngày</span> · <span id="tenNV">…</span></h1>
+ <div class="che"><button id="cheBC">📄 BÁO CÁO NGÀY</button><button id="cheKH">🗓 KẾ HOẠCH CÔNG VIỆC</button></div>
  <div class="hang"><button id="truoc">‹</button><input id="ngay" type="date"><button id="sau">›</button><button id="lai">↻</button></div>
  <button id="gui" disabled>📤 GỬI ZALO</button>
+</div>
+<div id="nhap">
+ <h3 id="nhapTD">➕ Thêm việc</h3>
+ <div id="dsViec"></div>
+ <label>1. TÊN CÔNG VIỆC (chọn hoặc tự gõ)</label><input id="fTen" list="dlTen" autocomplete="off">
+ <label>GẶP AI (khách / công trình — chọn hoặc tự gõ)</label><input id="fKhach" list="dlKhach" autocomplete="off">
+ <label>2. NỘI DUNG CÔNG VIỆC CỤ THỂ</label><textarea id="fNd"></textarea>
+ <label>3. MỤC TIÊU ĐẠT ĐƯỢC GÌ (chọn hoặc tự gõ)</label><input id="fMt" list="dlMt" autocomplete="off">
+ <div id="oKq"><label>KẾT QUẢ (chỉ ghi khi chưa làm được, hoặc việc không gặp khách)</label><input id="fKq" list="dlKq" autocomplete="off"></div>
+ <div class="nut2"><button id="luuViec">💾 LƯU VIỆC</button><button id="huyViec" class="phu">Làm mới</button></div>
+ <datalist id="dlTen"></datalist><datalist id="dlKhach"></datalist><datalist id="dlMt"></datalist><datalist id="dlKq"></datalist>
 </div>
 <div id="tb">Đang tải báo cáo…</div>
 <div class="xem" id="xem"></div>
@@ -52,17 +77,64 @@
  function homNay() { var d = new Date(Date.now() + 7 * 3600000); return d.toISOString().slice(0, 10); }
  function dd(s) { var p = s.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
  function doiNgay(n) { var d = new Date($('ngay').value + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); $('ngay').value = d.toISOString().slice(0, 10); tai(); }
- $('ngay').value = homNay();
+ // 10/11: 2 chế độ — BÁO CÁO NGÀY (kết quả theo lượt ghé) · KẾ HOẠCH CÔNG VIỆC (NV tự lập trên app). ?kh=1 mở thẳng kế hoạch; ?ngay=yyyy-mm-dd chọn ngày.
+ var KH = /[?&]kh=1/.test(location.search), NGAY_URL = (location.search.match(/[?&]ngay=(\d{4}-\d{2}-\d{2})/) || [])[1] || '';
+ function ngayMai() { var d = new Date(Date.now() + 31 * 3600000); return d.toISOString().slice(0, 10); }
+ function macDinh() { return KH ? (new Date(Date.now() + 7 * 3600000).getUTCHours() >= 12 ? ngayMai() : homNay()) : homNay(); }
+ function doiChe(kh) { KH = kh; $('cheKH').className = kh ? 'on' : ''; $('cheBC').className = kh ? '' : 'on'; $('tieuDe').textContent = kh ? '🗓 Kế hoạch công việc' : '📄 Báo cáo ngày'; $('nhap').style.display = kh ? 'block' : 'none'; }
+ // ---- 10/11: nhập KẾ HOẠCH CÔNG VIỆC ngay trên trang (ô nào cũng chọn được hoặc tự gõ)
+ var DS_TEN = ['GẶP ĐẠI LÝ ĐANG LẤY HÀNG', 'ĐI CHÀO CÔNG TRÌNH CÙNG ĐẠI LÝ', 'GẶP ĐẠI LÝ LẤY GIẢM', 'CHĂM KHÁCH TIỀM NĂNG / MỤC TIÊU', 'KHÁM PHÁ KHÁCH MỚI', 'THEO DÕI CÔNG TRÌNH', 'THU TIỀN / ĐỐI CHIẾU CÔNG NỢ', 'GIAO HÀNG / MẪU THỬ', 'VIỆC NỘI BỘ / HỌP'];
+ var DS_MT = {
+   'GẶP ĐẠI LÝ ĐANG LẤY HÀNG': ['BIẾT THÁNG NÀY MẤY CT · ĐÃ NHẬN MẤY CT · MẤY CT SƠN TRONG THÁNG', 'HẸN NGÀY ĐI CHÀO CT CÙNG ĐẠI LÝ', 'BIẾT KHÓ KHĂN CỦA ĐẠI LÝ'],
+   'ĐI CHÀO CÔNG TRÌNH CÙNG ĐẠI LÝ': ['CHÀO ĐƯỢC CT', 'NHẬN ĐƯỢC CT'],
+   'GẶP ĐẠI LÝ LẤY GIẢM': ['TÌM RA LÝ DO LẤY GIẢM', 'HẸN LẠI NGÀY LẤY HÀNG'],
+   'CHĂM KHÁCH TIỀM NĂNG / MỤC TIÊU': ['KHÁM PHÁ THÊM THÔNG TIN', 'TẠO QUAN HỆ', 'MỜI THĂM NHÀ MÁY', 'HẸN ĐI CHÀO CT', 'TÌM NỖI ĐAU CỦA KHÁCH', 'LẤY ĐƠN THỬ'],
+   'KHÁM PHÁ KHÁCH MỚI': ['KHÁM PHÁ ĐỦ THÔNG TIN KHÁCH', 'XIN SĐT + HẸN LẦN SAU'],
+   'THU TIỀN / ĐỐI CHIẾU CÔNG NỢ': ['THU ĐƯỢC TIỀN', 'KHÁCH XÁC NHẬN SỐ NỢ']
+ };
+ var DS_KQ = ['ĐÃ LÀM, ĐẠT', 'ĐÃ LÀM, CHƯA ĐẠT', 'KHÁCH HẸN LẠI', 'KHÔNG GẶP ĐƯỢC', 'ĐỔI TUYẾN', 'VIỆC GẤP', 'HẾT GIỜ'];
+ var SUA = '', VIEC = [];
+ function dl(id, ds) { $(id).innerHTML = ds.map(function (x) { return '<option value="' + esc(x) + '">'; }).join(''); }
+ function goiYMt() { var t = $('fTen').value.trim().toUpperCase(), ds = DS_MT[t]; if (!ds) { ds = []; Object.keys(DS_MT).forEach(function (k) { ds = ds.concat(DS_MT[k]); }); } dl('dlMt', ds); }
+ dl('dlTen', DS_TEN); dl('dlKq', DS_KQ); goiYMt();
+ $('fTen').oninput = goiYMt;
+ function lamMoi() { SUA = ''; ['fTen', 'fKhach', 'fNd', 'fMt', 'fKq'].forEach(function (i) { $(i).value = ''; }); $('nhapTD').textContent = '➕ Thêm việc ngày ' + dd($('ngay').value); $('luuViec').textContent = '💾 LƯU VIỆC'; goiYMt(); }
+ $('huyViec').onclick = lamMoi;
+ function goi(than, xong) {
+   fetch(EXEC, { method: 'POST', body: JSON.stringify(than), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' })
+     .then(function (r) { return r.json(); }).then(xong, function () { xong({ ok: false, loi: 'Mạng yếu, chưa gửi được. Thử lại.' }); });
+ }
+ $('luuViec').onclick = function () {
+   var dong = { ma: SUA, ngay: $('ngay').value, ten: $('fTen').value, khach: $('fKhach').value, nd: $('fNd').value, mt: $('fMt').value, kq: $('fKq').value };
+   if (!dong.ten.trim() && !dong.nd.trim()) { alert('Ghi TÊN CÔNG VIỆC hoặc NỘI DUNG.'); return; }
+   $('luuViec').disabled = true; $('luuViec').textContent = 'Đang lưu…';
+   goi({ kenh: 'WEB', hanhDong: 'WEB_KHCV', t: T, lam: 'LUU', dong: dong }, function (k) {
+     $('luuViec').disabled = false;
+     if (!k || !k.ok) { $('luuViec').textContent = '💾 LƯU VIỆC'; alert((k && k.loi) || 'Chưa lưu được.'); return; }
+     lamMoi(); tai();
+   });
+ };
+ function suaViec(i) { var o = VIEC[i]; SUA = o.ma; $('fTen').value = o.ten; $('fKhach').value = o.khach; $('fNd').value = o.nd; $('fMt').value = o.mt; $('fKq').value = o.kq; goiYMt();
+   $('nhapTD').textContent = '✏️ Sửa việc ' + (i + 1); $('luuViec').textContent = '💾 LƯU SỬA'; $('nhap').scrollIntoView(); }
+ function xoaViec(i) { var o = VIEC[i]; if (!confirm('Xoá việc "' + (o.ten || o.nd) + '"?')) return;
+   goi({ kenh: 'WEB', hanhDong: 'WEB_KHCV', t: T, lam: 'XOA', dong: { ma: o.ma } }, function (k) { if (!k || !k.ok) { alert((k && k.loi) || 'Chưa xoá được.'); return; } lamMoi(); tai(); }); }
+ $('cheBC').onclick = function () { doiChe(false); $('ngay').value = homNay(); tai(); };
+ $('cheKH').onclick = function () { doiChe(true); $('ngay').value = macDinh(); tai(); };
+ doiChe(KH);
+ $('ngay').value = NGAY_URL || macDinh();
  $('truoc').onclick = function () { doiNgay(-1); }; $('sau').onclick = function () { doiNgay(1); };
  $('lai').onclick = tai; $('ngay').onchange = tai;
 
  /** 1 thẻ khách. Ô trống tô đỏ; gặp công trình thì không bắt các ô của đại lý (và ngược lại). */
  function the(o, i) {
    var laCT = !o['TÊN ĐẠI LÝ'] && !!o['TÊN CÔNG TRÌNH'];
+   // 10/11 Sếp chốt: gặp ĐẠI LÝ đang lấy hàng (đánh giá ĐẠI LÝ / ĐẠI LÝ MỚI / CỘNG TÁC VIÊN) thì app đã ẩn Tín hiệu mua + Băn khoăn → không tính trống
+   var laDL = !laCT && /(^|,\s*)(ĐẠI LÝ|ĐẠI LÝ MỚI|CỘNG TÁC VIÊN)(\s*,|$)/.test(String(o['ĐÁNH GIÁ ĐẠI LÝ'] || '').toUpperCase());
    var muc = (laCT ? [['TIẾN ĐỘ CÔNG TRÌNH', 'Tiến độ CT'], ['ĐÁNH GIÁ CÔNG TRÌNH', 'Đánh giá CT']]
                    : [['NGÀNH NGHỀ ĐẠI LÝ', 'Ngành nghề'], ['ĐÁNH GIÁ ĐẠI LÝ', 'Đánh giá']])
-     .concat([['VẤN ĐỀ', 'Vấn đề'], ['MỤC ĐÍCH GHÉ THĂM', 'Mục đích ghé'], ['TÍN HIỆU MUA', 'Tín hiệu mua'],
-              ['BĂN KHOĂN CỦA KH', 'Băn khoăn KH'], ['VIỆC LẦN SAU', 'Việc lần sau'], ['NGÀY HẸN LẠI', 'Hẹn lại']]);
+     .concat([['VẤN ĐỀ', 'Vấn đề'], ['MỤC ĐÍCH GHÉ THĂM', 'Mục đích ghé']])
+     .concat(laDL ? [] : [['TÍN HIỆU MUA', 'Tín hiệu mua'], ['BĂN KHOĂN CỦA KH', 'Băn khoăn KH']])
+     .concat([['VIỆC LẦN SAU', 'Việc lần sau'], ['NGÀY HẸN LẠI', 'Hẹn lại']]);
    var trong = 0;
    var dong = muc.map(function (m) { var v = o[m[0]]; if (!v) trong++; return '<tr><th>' + m[1] + '</th><td class="' + (v ? '' : 'tr') + '">' + (v ? esc(v) : 'TRỐNG') + '</td></tr>'; }).join('');
    var dc = [o['THÔN'], o['XÃ'], o['HUYỆN']].filter(Boolean).join(' – ');
@@ -80,8 +152,8 @@
    var ngay = $('ngay').value || homNay(), lan = ++DANG;
    TEP = []; $('gui').disabled = true; $('gui').textContent = '📤 GỬI ZALO'; $('xem').innerHTML = '';
    if (!T) { $('tb').innerHTML = '<span class="loi">Chưa có link riêng. Mở đúng link quản lý gửi qua Zalo (có ?t=…) một lần.</span>'; return; }
-   $('tb').textContent = 'Đang tải báo cáo ngày ' + dd(ngay) + '…';
-   fetch(EXEC, { method: 'POST', body: JSON.stringify({ kenh: 'WEB', hanhDong: 'WEB_BAOCAO', t: T, ngay: ngay }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' })
+   $('tb').textContent = 'Đang tải ' + (KH ? 'kế hoạch' : 'báo cáo') + ' ngày ' + dd(ngay) + '…';
+   fetch(EXEC, { method: 'POST', body: JSON.stringify({ kenh: 'WEB', hanhDong: 'WEB_BAOCAO', t: T, ngay: ngay, kh: KH }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' })
      .then(function (r) { return r.json(); })
      .then(function (d) { if (lan === DANG) ve(d, ngay); }, function () { if (lan === DANG) $('tb').innerHTML = '<span class="loi">Mạng yếu, chưa tải được. Bấm ↻ để thử lại.</span>'; });
  }
@@ -89,10 +161,13 @@
  function ve(d, ngay) {
    if (!d || !d.ok) { $('tb').innerHTML = '<span class="loi">' + esc((d && d.loi) || 'Lỗi tạm thời, bấm ↻ thử lại.') + '</span>'; return; }
    $('tenNV').textContent = d.ten;
+   if (KH) return veKH(d, ngay);
    var ds = d.ds || [];
    var dem = d.dem || null;                                         // 23/10: dòng đối chiếu check-in ↔ báo cáo
    var doiChieu = dem ? 'Check-in: ' + dem.ck + ' · Báo cáo: ' + ds.length + (dem.chuaBC ? ' · CHƯA BÁO CÁO: ' + dem.chuaBC : ' · đủ') : '';
-   if (!ds.length) { $('tb').innerHTML = 'Ngày <b>' + dd(ngay) + '</b> chưa có báo cáo nào' + (dem && dem.ck ? ' (đã check-in <b>' + dem.ck + '</b> lượt)' : '') + '. Làm báo cáo trên app xong rồi bấm ↻.'; return; }
+   var dk = d.dcKH;                                                 // 10/11: đối chiếu với KẾ HOẠCH CÔNG VIỆC của ngày
+   if (dk && dk.tong) doiChieu += (doiChieu ? '<br>' : '') + 'Kế hoạch: ' + dk.tong + ' việc · đã làm ' + dk.daLam + ' · chưa làm ' + dk.chua + ' · phát sinh ' + dk.phatSinh.length;
+   else doiChieu += (doiChieu ? '<br>' : '') + 'CHƯA LẬP KẾ HOẠCH CÔNG VIỆC';   if (!ds.length) { $('tb').innerHTML = 'Ngày <b>' + dd(ngay) + '</b> chưa có báo cáo nào' + (dem && dem.ck ? ' (đã check-in <b>' + dem.ck + '</b> lượt)' : '') + '. Làm báo cáo trên app xong rồi bấm ↻.'; return; }
    var the_ = ds.map(function (o, i) { return the(o, i + 1); });
    var trong = the_.reduce(function (s, x) { return s + x.trong; }, 0), soAnh = Math.ceil(ds.length / MOI_ANH);
    var khuon = '';
@@ -108,6 +183,37 @@
    dungAnh(0, soAnh, ngay, DANG);
  }
 
+ /** 10/11: ảnh KẾ HOẠCH CÔNG VIỆC — mỗi việc: tên việc · gặp ai · nội dung · mục tiêu. Ngày đã qua/hôm nay: kèm trạng thái theo lượt ghé thật. */
+ function veKH(d, ngay) {
+   var kh = d.kh || [], dk = d.dcKH, daQua = ngay <= homNay();
+   VIEC = kh; if (d.goiY && d.goiY.length) dl('dlKhach', d.goiY);
+   $('oKq').style.display = daQua ? 'block' : 'none';
+   if (!SUA) $('nhapTD').textContent = '➕ Thêm việc ngày ' + dd(ngay);
+   $('dsViec').innerHTML = kh.map(function (o, i) {
+     return '<div class="viec"><div><b>' + (i + 1) + '. ' + esc(o.ten || o.nd) + '</b>' + (o.khach ? ' · ' + esc(o.khach) : '') + (o.mt ? '<br><small>Mục tiêu: ' + esc(o.mt) + '</small>' : '') + (daQua && o.tt ? '<br><small><b>' + esc(o.tt) + '</b>' + (o.kq ? ' · ' + esc(o.kq) : '') + '</small>' : '') + '</div>' +
+       '<button onclick="suaViec(' + i + ')">Sửa</button><button onclick="xoaViec(' + i + ')">Xoá</button></div>';
+   }).join('');
+   if (!kh.length) { $('tb').innerHTML = 'Ngày <b>' + dd(ngay) + '</b> chưa có việc nào. Điền ô bên trên rồi bấm <b>LƯU VIỆC</b>; lưu xong ảnh kế hoạch tự hiện để gửi nhóm.'; return; }
+   var MOI = 4, soAnh = Math.ceil(kh.length / MOI), khuon = '';
+   var the_ = kh.map(function (o, i) {
+     var tt = daQua && o.tt ? '<span class="tt ' + (/^ĐÃ/.test(o.tt) ? 'ok' : 'chua') + '">' + esc(o.tt) + '</span>' : '';
+     var dong = [['Gặp ai', o.khach], ['Nội dung', o.nd], ['Mục tiêu', o.mt]].concat(o.kq ? [['Kết quả', o.kq]] : [])
+       .filter(function (m) { return m[1]; }).map(function (m) { return '<tr><th>' + m[0] + '</th><td>' + esc(m[1]) + '</td></tr>'; }).join('');
+     return '<div class="the"><div class="dau"><b>' + (i + 1) + '. ' + esc(o.ten || o.khach || 'Công việc') + '</b>' + tt + '</div><table>' + dong + '</table></div>';
+   });
+   var tom = daQua && dk ? 'Kế hoạch ' + dk.tong + ' việc · đã làm ' + dk.daLam + ' · chưa làm ' + dk.chua + ' · phát sinh ' + dk.phatSinh.length : kh.length + ' việc';
+   var ps = daQua && dk && dk.phatSinh.length ? '<div class="the"><div class="dau"><b>Phát sinh ngoài kế hoạch</b></div><div class="dc">' + dk.phatSinh.map(esc).join(' · ') + '</div></div>' : '';
+   for (var p = 0; p < soAnh; p++) {
+     khuon += '<div class="anh" id="anh' + p + '"><div class="top"><h2>KẾ HOẠCH CÔNG VIỆC ' + dd(ngay) + ' · ' + esc(d.ten).toUpperCase() + '</h2>' +
+       '<div><b>' + tom + '</b></div><div>' + CTY + ' · Ảnh ' + (p + 1) + '/' + soAnh + '</div></div>' +
+       the_.slice(p * MOI, (p + 1) * MOI).join('') + (p === soAnh - 1 ? ps : '') +
+       '<div class="chan">Xuất từ app báo cáo lúc ' + new Date().toLocaleString('vi-VN') + '</div></div>';
+   }
+   $('khuon').innerHTML = khuon;
+   $('tb').innerHTML = '<b>' + tom + '</b> · ' + soAnh + ' ảnh. Đang dựng ảnh…';
+   dungAnh(0, soAnh, ngay, DANG);
+ }
+
  /** Dựng lần lượt từng ảnh PNG (để sẵn, bấm GỬI là chia sẻ ngay cả bộ). */
  function dungAnh(p, soAnh, ngay, lan) {
    if (lan !== DANG) return;
@@ -119,7 +225,7 @@
    html2canvas($('anh' + p), { scale: 2, backgroundColor: '#eef1f4', logging: false }).then(function (cv) {
      cv.toBlob(function (b) {
        if (lan !== DANG) return;
-       TEP.push(new File([b], 'bao-cao-' + ngay + '-' + (p + 1) + '.png', { type: 'image/png' }));
+       TEP.push(new File([b], (KH ? 'ke-hoach-' : 'bao-cao-') + ngay + '-' + (p + 1) + '.png', { type: 'image/png' }));
        var im = new Image(); im.src = URL.createObjectURL(b); im.alt = 'Ảnh ' + (p + 1); $('xem').appendChild(im);
        dungAnh(p + 1, soAnh, ngay, lan);
      }, 'image/png');
