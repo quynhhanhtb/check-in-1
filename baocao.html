@@ -2,7 +2,7 @@
 <html lang="vi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Báo cáo ngày · NEWCOLOR</title>
+<title>Báo cáo kết quả ngày · NEWCOLOR</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
  *{box-sizing:border-box} html,body{overflow-x:hidden}
@@ -44,11 +44,19 @@
  .nut2{display:flex;gap:8px;margin-top:10px}.nut2 button{flex:1;font-size:16px;font-weight:800;padding:12px;border:0;border-radius:10px;background:#1e7b34;color:#fff}
  .nut2 button.phu{background:#eef1f4;color:#1b1f24}
  .viec{display:flex;gap:8px;align-items:flex-start;border-top:1px solid #eef1f4;padding:8px 0;font-size:15px}
+ .kp{margin:0 10px 10px;border:1px solid #d6e2ef;border-radius:8px;overflow:hidden}
+ .kp .kt{background:#f3f7fb;color:#0b4f8a;font-size:12.5px;font-weight:800;padding:5px 8px}
+ .kp .kt.trd{color:#c62828;background:#fdecea}
+ .kp .kd{display:flex;gap:6px;padding:5px 8px;border-top:1px solid #eef1f4;font-size:14.5px;line-height:1.35}
+ .kp .kd i{font-style:normal;color:#5d6b7c;font-size:12.5px;min-width:96px;max-width:96px}
+ .kp .kd b{word-break:break-word}
+ .moi{margin:6px 12px 0;padding:5px 8px;border-radius:6px;font-size:13.5px;font-weight:800}
+ .moi.m1{background:#fff4d6;color:#8a5a00}.moi.m2{background:#eef1f4;color:#36506b}
  .viec div{flex:1}.viec small{color:#5d6b7c}.viec button{font-size:13px;padding:6px 9px;border:1px solid #c9ced6;background:#fff;border-radius:8px}
 </style></head><body>
 <div class="dk">
- <h1><span id="tieuDe">📄 Báo cáo ngày</span> · <span id="tenNV">…</span></h1>
- <div class="che"><button id="cheBC">📄 BÁO CÁO NGÀY</button><button id="cheKH">🗓 KẾ HOẠCH CÔNG VIỆC</button></div>
+ <h1><span id="tieuDe">📄 Báo cáo kết quả ngày</span> · <span id="tenNV">…</span></h1>
+ <div class="che"><button id="cheBC">📄 BÁO CÁO KẾT QUẢ NGÀY</button><button id="cheKH">🗓 LẬP KẾ HOẠCH NGÀY</button></div>
  <div class="hang"><button id="truoc">‹</button><input id="ngay" type="date"><button id="sau">›</button><button id="lai">↻</button></div>
  <button id="gui" disabled>📤 GỬI ZALO</button>
 </div>
@@ -81,7 +89,7 @@
  var KH = /[?&]kh=1/.test(location.search), NGAY_URL = (location.search.match(/[?&]ngay=(\d{4}-\d{2}-\d{2})/) || [])[1] || '';
  function ngayMai() { var d = new Date(Date.now() + 31 * 3600000); return d.toISOString().slice(0, 10); }
  function macDinh() { return KH ? (new Date(Date.now() + 7 * 3600000).getUTCHours() >= 12 ? ngayMai() : homNay()) : homNay(); }
- function doiChe(kh) { KH = kh; $('cheKH').className = kh ? 'on' : ''; $('cheBC').className = kh ? '' : 'on'; $('tieuDe').textContent = kh ? '🗓 Kế hoạch công việc' : '📄 Báo cáo ngày'; $('nhap').style.display = kh ? 'block' : 'none'; }
+ function doiChe(kh) { KH = kh; $('cheKH').className = kh ? 'on' : ''; $('cheBC').className = kh ? '' : 'on'; $('tieuDe').textContent = kh ? '🗓 Lập kế hoạch ngày' : '📄 Báo cáo kết quả ngày'; $('nhap').style.display = kh ? 'block' : 'none'; }
  // ---- 10/11: nhập KẾ HOẠCH CÔNG VIỆC ngay trên trang (ô nào cũng chọn được hoặc tự gõ)
  var DS_TEN = ['GẶP ĐẠI LÝ ĐANG LẤY HÀNG', 'ĐI CHÀO CÔNG TRÌNH CÙNG ĐẠI LÝ', 'GẶP ĐẠI LÝ LẤY GIẢM', 'CHĂM KHÁCH TIỀM NĂNG / MỤC TIÊU', 'KHÁM PHÁ KHÁCH MỚI', 'THEO DÕI CÔNG TRÌNH', 'THU TIỀN / ĐỐI CHIẾU CÔNG NỢ', 'GIAO HÀNG / MẪU THỬ', 'VIỆC NỘI BỘ / HỌP'];
  var DS_MT = {
@@ -144,8 +152,18 @@
      '<span' + (o['SỐ ĐIỆN THOẠI'] || laCT ? '' : ' class="trd"') + '>' + esc(o['SỐ ĐIỆN THOẠI'] || (laCT ? '' : 'TRỐNG SĐT')) + '</span></div>' +
      '<div class="dc">📍 ' + (dc ? esc(dc) : '<span class="trd">TRỐNG ĐỊA CHỈ</span>') + '</div>' +
      (o.nguon === 'APP' ? (o.tt === 'LỖI' ? '<div class="cho" style="color:#c62828">⚠ App báo LỖI khi chuyển vào NHẬT KÝ – nhắn quản lý</div>' : '<div class="cho">⏳ Vừa lưu trên app, đang chờ vào NHẬT KÝ</div>') : '') +
-     '<table>' + dong + '</table></div>';
+     (o.moi === 'MOI' ? '<div class="moi m1">KHÁCH MỚI · GẶP LẦN ĐẦU · gửi thông tin khám phá lên nhóm Zalo</div>'
+       : o.moi === 'THANG' ? '<div class="moi m1">GẶP LẦN ĐẦU TRONG THÁNG · gửi thông tin khám phá lên nhóm Zalo</div>' : '') +
+     '<table>' + dong + '</table>' + kpHtml(o, laCT, laDL) + '</div>';
    return { html: html, trong: trong };
+ }
+ // 11/11 Chị: hiện THÔNG TIN KHÁM PHÁ NV điền trong lượt này (mục · ghi gì). Khách chưa là đại lý mà không điền gì -> báo đỏ.
+ function kpHtml(o, laCT, laDL) {
+   if (laCT) return '';
+   var kp = o.kp || [], chuaGap = /CHƯA GẶP ĐƯỢC/.test(String(o['ĐÁNH GIÁ ĐẠI LÝ'] || '').toUpperCase());
+   if (!kp.length) return (laDL || chuaGap || o.nguon !== 'APP' && !o.ma) ? '' : '<div class="kp"><div class="kt trd">THÔNG TIN KHÁM PHÁ LƯỢT NÀY: KHÔNG ĐIỀN</div></div>';
+   return '<div class="kp"><div class="kt">THÔNG TIN KHÁM PHÁ LƯỢT NÀY (' + kp.length + ' mục)</div>' +
+     kp.map(function (x) { return '<div class="kd"><i>' + esc(x.muc) + '</i><b>' + esc(x.gt) + '</b></div>'; }).join('') + '</div>';
  }
 
  function tai() {
@@ -167,12 +185,14 @@
    var doiChieu = dem ? 'Check-in: ' + dem.ck + ' · Báo cáo: ' + ds.length + (dem.chuaBC ? ' · CHƯA BÁO CÁO: ' + dem.chuaBC : ' · đủ') : '';
    var dk = d.dcKH;                                                 // 10/11: đối chiếu với KẾ HOẠCH CÔNG VIỆC của ngày
    if (dk && dk.tong) doiChieu += (doiChieu ? '<br>' : '') + 'Kế hoạch: ' + dk.tong + ' việc · đã làm ' + dk.daLam + ' · chưa làm ' + dk.chua + ' · phát sinh ' + dk.phatSinh.length;
-   else doiChieu += (doiChieu ? '<br>' : '') + 'CHƯA LẬP KẾ HOẠCH CÔNG VIỆC';   if (!ds.length) { $('tb').innerHTML = 'Ngày <b>' + dd(ngay) + '</b> chưa có báo cáo nào' + (dem && dem.ck ? ' (đã check-in <b>' + dem.ck + '</b> lượt)' : '') + '. Làm báo cáo trên app xong rồi bấm ↻.'; return; }
+   else doiChieu += (doiChieu ? '<br>' : '') + 'CHƯA LẬP KẾ HOẠCH NGÀY';   if (!ds.length) { $('tb').innerHTML = 'Ngày <b>' + dd(ngay) + '</b> chưa có báo cáo nào' + (dem && dem.ck ? ' (đã check-in <b>' + dem.ck + '</b> lượt)' : '') + '. Làm báo cáo trên app xong rồi bấm ↻.'; return; }
    var the_ = ds.map(function (o, i) { return the(o, i + 1); });
    var trong = the_.reduce(function (s, x) { return s + x.trong; }, 0), soAnh = Math.ceil(ds.length / MOI_ANH);
+   var dsMoi = ds.filter(function (o) { return o.moi === 'MOI' || o.moi === 'THANG'; });   // Chị 11/11: tính theo LẦN ĐẦU GẶP TRONG THÁNG   // 11/11 Chị: ghi số + TÊN khách gặp lần đầu để làm việc với NV
+   if (dsMoi.length) doiChieu += (doiChieu ? '<br>' : '') + 'Khách gặp lần đầu trong tháng: ' + dsMoi.length + ' — ' + dsMoi.map(function (o) { return esc(o['TÊN ĐẠI LÝ'] || o['SỐ ĐIỆN THOẠI']); }).join(', ');
    var khuon = '';
    for (var p = 0; p < soAnh; p++) {
-     khuon += '<div class="anh" id="anh' + p + '"><div class="top"><h2>BÁO CÁO NGÀY ' + dd(ngay) + ' · ' + esc(d.ten).toUpperCase() + '</h2>' +
+     khuon += '<div class="anh" id="anh' + p + '"><div class="top"><h2>BÁO CÁO KẾT QUẢ NGÀY ' + dd(ngay) + ' · ' + esc(d.ten).toUpperCase() + '</h2>' +
        (doiChieu ? '<div class="' + (dem.chuaBC ? 'trd' : '') + '"><b>' + doiChieu + '</b></div>' : '') +
        '<div>' + CTY + ' · ' + ds.length + ' lượt ghé · ' + trong + ' ô bỏ trống · Ảnh ' + (p + 1) + '/' + soAnh + '</div></div>' +
        the_.slice(p * MOI_ANH, (p + 1) * MOI_ANH).map(function (x) { return x.html; }).join('') +
@@ -204,7 +224,7 @@
    var tom = daQua && dk ? 'Kế hoạch ' + dk.tong + ' việc · đã làm ' + dk.daLam + ' · chưa làm ' + dk.chua + ' · phát sinh ' + dk.phatSinh.length : kh.length + ' việc';
    var ps = daQua && dk && dk.phatSinh.length ? '<div class="the"><div class="dau"><b>Phát sinh ngoài kế hoạch</b></div><div class="dc">' + dk.phatSinh.map(esc).join(' · ') + '</div></div>' : '';
    for (var p = 0; p < soAnh; p++) {
-     khuon += '<div class="anh" id="anh' + p + '"><div class="top"><h2>KẾ HOẠCH CÔNG VIỆC ' + dd(ngay) + ' · ' + esc(d.ten).toUpperCase() + '</h2>' +
+     khuon += '<div class="anh" id="anh' + p + '"><div class="top"><h2>KẾ HOẠCH NGÀY ' + dd(ngay) + ' · ' + esc(d.ten).toUpperCase() + '</h2>' +
        '<div><b>' + tom + '</b></div><div>' + CTY + ' · Ảnh ' + (p + 1) + '/' + soAnh + '</div></div>' +
        the_.slice(p * MOI, (p + 1) * MOI).join('') + (p === soAnh - 1 ? ps : '') +
        '<div class="chan">Xuất từ app báo cáo lúc ' + new Date().toLocaleString('vi-VN') + '</div></div>';
