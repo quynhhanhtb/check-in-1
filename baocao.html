@@ -162,8 +162,11 @@
    if (laCT) return '';
    var kp = o.kp || [], chuaGap = /CHƯA GẶP ĐƯỢC/.test(String(o['ĐÁNH GIÁ ĐẠI LÝ'] || '').toUpperCase());
    if (!kp.length) return (laDL || chuaGap || o.nguon !== 'APP' && !o.ma) ? '' : '<div class="kp"><div class="kt trd">THÔNG TIN KHÁM PHÁ LƯỢT NÀY: KHÔNG ĐIỀN</div></div>';
-   return '<div class="kp"><div class="kt">THÔNG TIN KHÁM PHÁ LƯỢT NÀY (' + kp.length + ' mục)</div>' +
-     kp.map(function (x) { return '<div class="kd"><i>' + esc(x.muc) + '</i><b>' + esc(x.gt) + '</b></div>'; }).join('') + '</div>';
+   // 16/11 Chị: hiện nguyên văn NV ghi (kể cả "k"); có câu ghi cho có -> dòng đỏ LÀM ĐỐI PHÓ
+   var dp = kp.filter(function (x) { return x.dp; }).length;
+   return '<div class="kp">' + (dp ? '<div class="kt trd">THÔNG TIN KHÁM PHÁ LÀM ĐỐI PHÓ (' + dp + '/' + kp.length + ' câu ghi cho có)</div>' : '') +
+     '<div class="kt">THÔNG TIN KHÁM PHÁ LƯỢT NÀY (' + kp.length + ' mục)</div>' +
+     kp.map(function (x) { return '<div class="kd"><i>' + esc(x.muc) + '</i><b' + (x.dp ? ' style="color:#c62828"' : '') + '>' + esc(x.gt) + '</b></div>'; }).join('') + '</div>';
  }
 
  function tai() {
