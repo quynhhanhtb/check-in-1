@@ -169,7 +169,9 @@
      kp.map(function (x) { return '<div class="kd"><i>' + esc(x.muc) + '</i><b' + (x.dp ? ' style="color:#c62828"' : '') + '>' + esc(x.gt) + '</b></div>'; }).join('') + '</div>';
  }
 
- function tai() {
+ var CHO_HEN = 0, CHO_LAN = 0;
+ function tai(tuDong) {
+   clearTimeout(CHO_HEN); if (tuDong !== true) CHO_LAN = 0;
    var ngay = $('ngay').value || homNay(), lan = ++DANG;
    TEP = []; $('gui').disabled = true; $('gui').textContent = '📤 GỬI ZALO'; $('xem').innerHTML = '';
    if (!T) { $('tb').innerHTML = '<span class="loi">Chưa có link riêng. Mở đúng link quản lý gửi qua Zalo (có ?t=…) một lần.</span>'; return; }
@@ -188,7 +190,21 @@
    var doiChieu = dem ? 'Check-in: ' + dem.ck + ' · Báo cáo: ' + ds.length + (dem.chuaBC ? ' · CHƯA BÁO CÁO: ' + dem.chuaBC : ' · đủ') : '';
    var dk = d.dcKH;                                                 // 10/11: đối chiếu với KẾ HOẠCH CÔNG VIỆC của ngày
    if (dk && dk.tong) doiChieu += (doiChieu ? '<br>' : '') + 'Kế hoạch: ' + dk.tong + ' việc · đã làm ' + dk.daLam + ' · chưa làm ' + dk.chua + ' · phát sinh ' + dk.phatSinh.length;
-   else doiChieu += (doiChieu ? '<br>' : '') + 'CHƯA LẬP KẾ HOẠCH NGÀY';   if (!ds.length) { $('tb').innerHTML = 'Ngày <b>' + dd(ngay) + '</b> chưa có báo cáo nào' + (dem && dem.ck ? ' (đã check-in <b>' + dem.ck + '</b> lượt)' : '') + '. Làm báo cáo trên app xong rồi bấm ↻.'; return; }
+   else doiChieu += (doiChieu ? '<br>' : '') + 'CHƯA LẬP KẾ HOẠCH NGÀY';
+   // 26/11/2026 Chị: còn lượt check-in chưa có báo cáo trên máy thì CHƯA cho gửi (tránh ảnh thiếu việc); trang tự kiểm lại mỗi 30 giây
+   if (dem && dem.thieu && dem.thieu.length) {
+     var lanCho = ++CHO_LAN;
+     $('tb').innerHTML = '<div class="loi"><b>⏳ CHƯA GỬI ĐƯỢC — còn ' + dem.thieu.length + ' lượt check-in chưa thấy báo cáo trên máy:</b><br>' +
+       dem.thieu.map(esc).join('<br>') + '</div>' +
+       '<div style="margin-top:8px">• <b>Vừa điền xong:</b> mở lại app báo cáo, để yên khoảng <b>1–2 phút</b> cho app gửi hết báo cáo lên. Trang này tự kiểm lại sau 30 giây' + (lanCho > 1 ? ' (đã kiểm ' + lanCho + ' lần)' : '') + '.<br>' +
+       '• <b>Chưa điền:</b> mở app, làm báo cáo cho lượt trên rồi quay lại đây.<br>' +
+       '• <b>Bấm check-in nhầm / trùng:</b> nhắn quản lý mở khoá lượt đó.</div>' +
+       '<div style="margin-top:6px">Đã có ' + ds.length + ' báo cáo · check-in ' + dem.ck + ' lượt.</div>';
+     if (lanCho <= 40) CHO_HEN = setTimeout(function () { if (!KH) tai(true); }, 30000);
+     return;
+   }
+   CHO_LAN = 0;
+   if (!ds.length) { $('tb').innerHTML = 'Ngày <b>' + dd(ngay) + '</b> chưa có báo cáo nào' + (dem && dem.ck ? ' (đã check-in <b>' + dem.ck + '</b> lượt)' : '') + '. Làm báo cáo trên app xong rồi bấm ↻.'; return; }
    var the_ = ds.map(function (o, i) { return the(o, i + 1); });
    var trong = the_.reduce(function (s, x) { return s + x.trong; }, 0), soAnh = Math.ceil(ds.length / MOI_ANH);
    var dsMoi = ds.filter(function (o) { return o.moi === 'MOI' || o.moi === 'THANG'; });   // Chị 11/11: tính theo LẦN ĐẦU GẶP TRONG THÁNG   // 11/11 Chị: ghi số + TÊN khách gặp lần đầu để làm việc với NV
