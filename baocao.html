@@ -169,7 +169,25 @@
      kp.map(function (x) { return '<div class="kd"><i>' + esc(x.muc) + '</i><b' + (x.dp ? ' style="color:#c62828"' : '') + '>' + esc(x.gt) + '</b></div>'; }).join('') + '</div>';
  }
 
- var CHO_HEN = 0, CHO_LAN = 0;
+ var CHO_HEN = 0, CHO_LAN = 0, THIEU = [], LY_BO = ['BẤM NHẦM KHÁCH', 'CHECK-IN THỬ', 'BẤM TRÙNG LƯỢT'];
+ // tự kiểm lại; đang chọn lý do bỏ lượt thì chờ thêm, không tải lại làm mất lựa chọn
+ function kiemLai() {
+   if (KH) return;
+   var dangChon = [].some.call(document.querySelectorAll('select[id^="lyBo"]'), function (s) { return !!s.value || document.activeElement === s; });
+   if (dangChon) { CHO_HEN = setTimeout(kiemLai, 15000); return; }
+   tai(true);
+ }
+ // 26/11: NV tự bỏ lượt check-in nhầm (có lý do; máy ghi sổ + in đỏ trên ảnh)
+ function boLuot(i) {
+   var x = THIEU[i], ly = $('lyBo' + i).value;
+   if (!x || !x.ma) return;
+   if (!ly) { alert('Chọn lý do trước.'); return; }
+   if (!confirm('Bỏ lượt check-in ' + x.gio + ' · ' + x.ten + ' (lý do: ' + ly + ')?\nẢnh gửi nhóm sẽ ghi rõ bạn đã tự bỏ lượt này.')) return;
+   goi({ kenh: 'WEB', hanhDong: 'WEB_BO_CK', t: T, maCK: x.ma, lyDo: ly }, function (k) {
+     if (!k || !k.ok) { alert((k && k.loi) || 'Chưa bỏ được, thử lại.'); return; }
+     tai();
+   });
+ }
  function tai(tuDong) {
    clearTimeout(CHO_HEN); if (tuDong !== true) CHO_LAN = 0;
    var ngay = $('ngay').value || homNay(), lan = ++DANG;
@@ -191,16 +209,26 @@
    var dk = d.dcKH;                                                 // 10/11: đối chiếu với KẾ HOẠCH CÔNG VIỆC của ngày
    if (dk && dk.tong) doiChieu += (doiChieu ? '<br>' : '') + 'Kế hoạch: ' + dk.tong + ' việc · đã làm ' + dk.daLam + ' · chưa làm ' + dk.chua + ' · phát sinh ' + dk.phatSinh.length;
    else doiChieu += (doiChieu ? '<br>' : '') + 'CHƯA LẬP KẾ HOẠCH NGÀY';
+   // 26/11: lượt trùng máy tự bỏ qua + lượt NV tự bỏ (in đỏ) — để quản lý nhìn thấy trên ảnh
+   if (dem && dem.trung && dem.trung.length) doiChieu += '<br>Lượt check-in trùng (máy bỏ qua): ' + dem.trung.map(esc).join(', ');
+   if (dem && dem.tuBo && dem.tuBo.length) doiChieu += '<br><span style="background:#ffe08a;color:#b71c1c;padding:1px 5px;border-radius:4px">TỰ BỎ ' + dem.tuBo.length + ' lượt check-in: ' +
+     dem.tuBo.map(function (x) { return esc(x.gio + ' · ' + x.ten + ' — ' + x.lyDo); }).join('; ') + '</span>';
    // 26/11/2026 Chị: còn lượt check-in chưa có báo cáo trên máy thì CHƯA cho gửi (tránh ảnh thiếu việc); trang tự kiểm lại mỗi 30 giây
    if (dem && dem.thieu && dem.thieu.length) {
      var lanCho = ++CHO_LAN;
-     $('tb').innerHTML = '<div class="loi"><b>⏳ CHƯA GỬI ĐƯỢC — còn ' + dem.thieu.length + ' lượt check-in chưa thấy báo cáo trên máy:</b><br>' +
-       dem.thieu.map(esc).join('<br>') + '</div>' +
+     THIEU = dem.thieu;
+     $('tb').innerHTML = '<div class="loi"><b>⏳ CHƯA GỬI ĐƯỢC — còn ' + dem.thieu.length + ' lượt check-in chưa thấy báo cáo trên máy:</b></div>' +
+       dem.thieu.map(function (x, i) {
+         if (typeof x === 'string') return '<div class="loi">' + esc(x) + '</div>';
+         return '<div class="viec"><div class="loi"><b>' + esc(x.gio + ' · ' + x.ten) + '</b></div>' +
+           '<select id="lyBo' + i + '"><option value="">Lượt này nhầm? chọn lý do…</option>' + LY_BO.map(function (l) { return '<option>' + l + '</option>'; }).join('') + '</select>' +
+           '<button onclick="boLuot(' + i + ')">Bỏ lượt</button></div>';
+       }).join('') +
        '<div style="margin-top:8px">• <b>Vừa điền xong:</b> mở lại app báo cáo, để yên khoảng <b>1–2 phút</b> cho app gửi hết báo cáo lên. Trang này tự kiểm lại sau 30 giây' + (lanCho > 1 ? ' (đã kiểm ' + lanCho + ' lần)' : '') + '.<br>' +
        '• <b>Chưa điền:</b> mở app, làm báo cáo cho lượt trên rồi quay lại đây.<br>' +
-       '• <b>Bấm check-in nhầm / trùng:</b> nhắn quản lý mở khoá lượt đó.</div>' +
+       '• <b>Bấm nhầm khách / check-in thử / bấm trùng:</b> chọn lý do rồi bấm <b>Bỏ lượt</b> (tối đa 2 lượt/ngày). Ảnh gửi nhóm sẽ ghi rõ lượt bạn tự bỏ. Gặp khách mà khách vắng thì KHÔNG bỏ: làm báo cáo chọn "CHƯA GẶP ĐƯỢC".</div>' +
        '<div style="margin-top:6px">Đã có ' + ds.length + ' báo cáo · check-in ' + dem.ck + ' lượt.</div>';
-     if (lanCho <= 40) CHO_HEN = setTimeout(function () { if (!KH) tai(true); }, 30000);
+     if (lanCho <= 40) CHO_HEN = setTimeout(kiemLai, 30000);
      return;
    }
    CHO_LAN = 0;
